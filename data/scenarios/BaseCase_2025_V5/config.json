@@ -1,0 +1,94 @@
+{
+  "battery": {
+    "e_nom_kwh": 5000.0,
+    "p_ch_max_kw": 2500.0,
+    "p_dis_max_kw": 2500.0,
+    "soc0": 0.5,
+    "eta_ch": 0.95,
+    "eta_dis": 0.95,
+    "soc_min": 0.1,
+    "soc_max": 1.0
+  },
+  "markets": {
+    "day_ahead": true,
+    "intraday": false,
+    "regulation": false,
+    "self_consumption": false,
+    "peak_shaving": false,
+    "regelenergie": false,
+    "eigenverbrauch": false
+  },
+  "market_params": {
+    "feed_in_tariff_rp_per_kwh": 0.0,
+    "power_tariff_chf_per_kw_month": 0.0,
+    "forecast_target_col": "price_da",
+    "forecast_target_col_id": "price_id",
+    "id_retrain_every_hours": 24,
+    "id_horizon_hours": 24,
+    "id_min_train_rows": 200
+  },
+  "model": {
+    "forecast_mode": "rolling",
+    "model_name": "ridge",
+    "train_days_min": 10,
+    "retrain_every_days": 1
+  },
+  "dispatch_policy": {
+    "q_low": 0.25,
+    "q_high": 0.75,
+    "deadband": 0.0,
+    "cycle_penalty_chf_per_kwh": 0.0
+  },
+  "ui": {
+    "debug_mode": false,
+    "opex_user_override": false
+  },
+  "economics": {
+    "capex_chf_per_kw_power": 400.0,
+    "capex_chf_per_kwh_energy": 200.0,
+    "fixed_om_chf_per_kw_year": 10.0,
+    "asset_life_years": 15,
+    "wacc": 0.05,
+    "risk_premium_chf_per_mw_h": 0.0,
+    "total_project_cost_chf": 1300000.0,
+    "opex_chf_per_year": 39000.0,
+    "project_lifetime_years": 20
+  },
+  "sdl": {
+    "accept_prob_target": 0.28,
+    "window_days": 10,
+    "use_price": "p_clear_true",
+    "p_offer_mw": 2.5,
+    "gate_closure": {
+      "PRL": {
+        "type": "D-1",
+        "time": "08:00"
+      },
+      "SRL": {
+        "type": "D-1",
+        "time": "14:30"
+      }
+    },
+    "activation": {
+      "alpha_srl_up": 0.06,
+      "alpha_srl_down": 0.04
+    }
+  },
+  "market_mode": "DA_ONLY",
+  "multiuse": {
+    "margin_chf_per_h": 20.0,
+    "require_sdl_acceptance": true,
+    "strategy_profile": "neutral",
+    "use_dynamic_margin": true,
+    "use_opportunity_cost": true,
+    "lookahead_h": 6,
+    "weight_spread_vol": 1.0,
+    "weight_soc_edge": 8.0,
+    "weight_id_forecast_uncertainty": 0.5,
+    "weight_sdl_activation": 1.0,
+    "weight_degradation": 1.0,
+    "soc_edge_band_pct": 15.0,
+    "degradation_chf_per_kwh_throughput": 0.0,
+    "lookahead_discount": 0.9
+  }
+}
