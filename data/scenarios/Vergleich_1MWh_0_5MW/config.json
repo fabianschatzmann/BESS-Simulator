@@ -1,9 +1,9 @@
 {
   "battery": {
     "degradation_pct_per_year": 2.3,
-    "e_nom_kwh": 5000.0,
-    "p_ch_max_kw": 2500.0,
-    "p_dis_max_kw": 2500.0,
+    "e_nom_kwh": 1000.0,
+    "p_ch_max_kw": 500.0,
+    "p_dis_max_kw": 500.0,
     "eta_ch": 0.95,
     "eta_dis": 0.95,
     "soc0": 0.5,
@@ -11,9 +11,9 @@
     "soc_max": 0.95
   },
   "economics": {
-    "total_project_cost_chf": 1300000.0,
+    "total_project_cost_chf": 260000.0,
     "project_lifetime_years": 15,
-    "opex_chf_per_year": 39000.0,
+    "opex_chf_per_year": 7800.0,
     "estimated_cycles_per_year": 500.0
   },
   "markets": {
@@ -43,7 +43,7 @@
     "apply_min_bid_only_for_pay_as_bid": true,
     "accept_prob_target": 0.7,
     "window_days": 28,
-    "p_offer_mw": 2.5,
+    "p_offer_mw": 0.5,
     "gate_closure": {
       "PRL": {
         "type": "D-1",
@@ -60,9 +60,9 @@
     },
     "auto_offer_from_battery_prl": true,
     "auto_offer_from_battery_srl": true,
-    "p_offer_prl_mw": 2.5,
-    "p_offer_srl_up_mw": 2.5,
-    "p_offer_srl_down_mw": 2.5,
+    "p_offer_prl_mw": 0.5,
+    "p_offer_srl_up_mw": 0.5,
+    "p_offer_srl_down_mw": 0.5,
     "manual_min_bid_enabled": true,
     "manual_min_bid_chf_per_mw": 15.0,
     "derived_min_bid_chf_per_mw": 31.2
