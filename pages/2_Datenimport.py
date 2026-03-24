@@ -273,6 +273,89 @@ def ensure_ts_key(master: pd.DataFrame, tz_assume: str = "Europe/Zurich", sdl_ts
     return m
 
 
+def get_display_label_map(columns) -> dict:
+    """
+    Anzeige-Namen mit Einheiten für UI/Vorschau.
+    Interne Spaltennamen im echten DataFrame bleiben unverändert.
+    """
+    mapping = {
+        "ts": "ts [datetime]",
+        "timestamp": "timestamp [datetime]",
+        "ts_key": "ts_key [UTC]",
+        "date": "date [Datum]",
+        "day": "day [Datum]",
+        "datum": "datum [Datum]",
+        "zeit": "zeit [hh:mm]",
+        "stunde": "stunde [h]",
+        "hour": "hour [h]",
+
+        "price_da": "price_da [CHF/MWh]",
+        "price_id": "price_id [CHF/MWh]",
+
+        "load_act": "load_act [MW]",
+        "load_fc_da": "load_fc_da [MW]",
+        "load_fc_id": "load_fc_id [MW]",
+
+        "pv_act": "pv_act [MW]",
+        "pv_fc_da": "pv_fc_da [MW]",
+        "pv_fc_id": "pv_fc_id [MW]",
+
+        "wind_act": "wind_act [MW]",
+        "wind_fc_da": "wind_fc_da [MW]",
+        "wind_fc_id": "wind_fc_id [MW]",
+
+        "product": "product [-]",
+        "direction": "direction [-]",
+        "delivery_start": "delivery_start [Datum]",
+        "delivery_end": "delivery_end [Datum]",
+        "block_start": "block_start [hh:mm]",
+        "block_end": "block_end [hh:mm]",
+        "block_hours": "block_hours [h]",
+        "p_clear_true": "p_clear_true [CHF/MW/h]",
+        "p_vwa_true": "p_vwa_true [CHF/MW/h]",
+        "v_awarded_mw_total": "v_awarded_mw_total [MW]",
+        "n_bids": "n_bids [-]",
+        "Land": "Land [-]",
+        "Preis": "Preis [CHF/MW/h]",
+        "Leistungspreis": "Leistungspreis [CHF/Block]",
+        "Zugesprochenes Volumen": "Zugesprochenes Volumen [MW]",
+        "Angebotenes Volumen": "Angebotenes Volumen [MW]",
+        "Angebotspreis": "Angebotspreis [CHF/MW/h]",
+        "Ausschreibung": "Ausschreibung [-]",
+        "Beschreibung": "Beschreibung [-]",
+    }
+
+    out = {}
+    for c in columns:
+        c_str = str(c)
+
+        if c_str in mapping:
+            out[c] = mapping[c_str]
+        elif c_str.startswith("sdl_") and c_str.endswith("_chf_per_mw_h"):
+            out[c] = f"{c_str} [CHF/MW/h]"
+        elif c_str.startswith("sdl_"):
+            out[c] = f"{c_str} [-]"
+        else:
+            out[c] = c_str
+
+    return out
+
+
+def df_for_display(df: pd.DataFrame, n: int | None = None) -> pd.DataFrame:
+    """
+    Gibt eine reine Anzeige-Kopie mit Spaltennamen inkl. Einheiten zurück.
+    """
+    if df is None:
+        return pd.DataFrame()
+
+    out = df.copy()
+    if n is not None:
+        out = out.head(n).copy()
+
+    out = out.rename(columns=get_display_label_map(out.columns))
+    return out
+
+
 # =============================================================================
 # Swissgrid SDL FAST loader + parse-by-block + expand (wie bisher belassen)
 # =============================================================================
@@ -766,7 +849,17 @@ with tab_load:
     if master is not None:
         st.markdown("### Aktueller Master in der Session (Vorschau: 50 Zeilen)")
         st.write(f"Zeilen: {len(master)} | Spalten: {len(master.columns)}")
-        st.dataframe(master.head(50), use_container_width=True, height=360)
+        st.dataframe(df_for_display(master, 50), use_container_width=True, height=360)
+
+        master_export_csv = df_for_display(master).to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "📥 Aktuellen Master als CSV herunterladen",
+            data=master_export_csv,
+            file_name=f"{sname}_master_2025_with_units.csv",
+            mime="text/csv",
+            key="dl_current_master_csv",
+            help="Exportiert den aktuell geladenen Master mit allen Zeilen und Einheiten in den Spaltennamen.",
+    )
     else:
         st.info("Noch kein Master im Session State. Bitte Datei hochladen oder von Pfad laden.")
 
@@ -840,7 +933,7 @@ with tab_build:
                     df0 = read_any_table(files[0], sheet_name=sheet_name, header=header_row)
                     df0 = unify_columns(df0)
                     st.caption("Vorschau erste Datei (Spalten vereinheitlicht):")
-                    st.dataframe(df0.head(30), use_container_width=True, height=320)
+                    st.dataframe(df_for_display(df0, 30), use_container_width=True, height=320)
                     cols = list(df0.columns)
                 except Exception as e:
                     st.error(f"Erste Datei kann nicht gelesen werden: {e}")
@@ -1033,7 +1126,7 @@ with tab_build:
                     st.write("SDL Meta:", meta)
                     st.write("Spalten:", list(sdl_df.columns))
                     st.write("Shape:", sdl_df.shape)
-                    st.dataframe(sdl_df.head(50), use_container_width=True, height=300)
+                    st.dataframe(df_for_display(sdl_df, 50), use_container_width=True, height=300)
 
                     with st.status("Parse & Block-Aggregation (Cache)…", expanded=False):
                         blocks = cached_blocks_agg(CACHE_VERSION, sdl_df, filter_ch=sdl_filter_ch, products_tuple=tuple(sdl_products))
@@ -1042,7 +1135,7 @@ with tab_build:
                     st.session_state["sdl_blocks_agg"] = blocks
 
                     st.success(f"Aggregierte Blöcke: {len(blocks):,}")
-                    st.dataframe(blocks.head(50), use_container_width=True, height=300)
+                    st.dataframe(df_for_display(blocks, 50), use_container_width=True, height=300)
 
                     if not blocks.empty:
                         st.write(
@@ -1075,7 +1168,7 @@ with tab_build:
 
                         st.session_state["sdl_hourly"] = sdl_hourly
                         st.success(f"SDL stündlich gebaut: Zeilen={len(sdl_hourly):,} Spalten={len(sdl_hourly.columns):,}")
-                        st.dataframe(sdl_hourly.head(80), use_container_width=True, height=320)
+                        st.dataframe(df_for_display(sdl_hourly, 80), use_container_width=True, height=320)
 
                         if save_sdl_prices:
                             save_parquet(sname, "sdl_prices", sdl_hourly)
@@ -1269,4 +1362,4 @@ with tab_build:
     if master2 is not None:
         st.markdown("### Master-Vorschau (50 Zeilen)")
         st.write(f"Zeilen: {len(master2)} | Spalten: {len(master2.columns)}")
-        st.dataframe(master2.head(50), use_container_width=True, height=420)
+        st.dataframe(df_for_display(master2, 50), use_container_width=True, height=420)

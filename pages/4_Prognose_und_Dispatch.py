@@ -374,11 +374,25 @@ if market_mode == "SDL_ONLY":
         window_days=int(sdl_cfg.get("window_days", 28)),
         tz="Europe/Zurich",
         use_price=str(sdl_cfg.get("use_price", "p_clear_true")),
+
+        # Legacy / fallback
         p_offer_mw=float(sdl_cfg.get("p_offer_mw", 1.0)),
+
+        # NEU: produktspezifische Angebotsleistungen
+        p_offer_prl_mw=float(sdl_cfg.get("p_offer_prl_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+        p_offer_srl_up_mw=float(sdl_cfg.get("p_offer_srl_up_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+        p_offer_srl_down_mw=float(sdl_cfg.get("p_offer_srl_down_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+
         prl_close_time_local=prl_time,
         srl_close_time_local=srl_time,
         alpha_srl_up=float(alpha_up),
         alpha_srl_down=float(alpha_down),
+        min_bid_chf_per_mw=float(sdl_cfg.get("min_bid_chf_per_mw", 0.0) or 0.0),
+
+        # optionale technische SDL-Parameter
+        reserve_duration_minutes=float(sdl_cfg.get("reserve_duration_minutes", 5.0) or 5.0),
+        soc_buffer_kwh=float(sdl_cfg.get("soc_buffer_kwh", 0.0) or 0.0),
+        partial_offer_allowed=bool(sdl_cfg.get("partial_offer_allowed", False)),
     )
 
     _set_progress(0.35, "SDL Optimierung: Bidding + Merit-Order", progress_bar, progress_text)
@@ -855,11 +869,25 @@ if market_mode in ("DA_PLUS_ID", "DA_ID_SDL_MULTIUSE"):
             window_days=int(sdl_cfg.get("window_days", 28)),
             tz="Europe/Zurich",
             use_price=str(sdl_cfg.get("use_price", "p_clear_true")),
+
+            # Legacy / fallback
             p_offer_mw=float(sdl_cfg.get("p_offer_mw", 1.0)),
+
+            # NEU: produktspezifische Angebotsleistungen
+            p_offer_prl_mw=float(sdl_cfg.get("p_offer_prl_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+            p_offer_srl_up_mw=float(sdl_cfg.get("p_offer_srl_up_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+            p_offer_srl_down_mw=float(sdl_cfg.get("p_offer_srl_down_mw", sdl_cfg.get("p_offer_mw", 1.0))),
+
             prl_close_time_local=prl_time,
             srl_close_time_local=srl_time,
             alpha_srl_up=float(alpha_up),
             alpha_srl_down=float(alpha_down),
+            min_bid_chf_per_mw=float(sdl_cfg.get("min_bid_chf_per_mw", 0.0) or 0.0),
+
+            # optionale technische SDL-Parameter
+            reserve_duration_minutes=float(sdl_cfg.get("reserve_duration_minutes", 5.0) or 5.0),
+            soc_buffer_kwh=float(sdl_cfg.get("soc_buffer_kwh", 0.0) or 0.0),
+            partial_offer_allowed=bool(sdl_cfg.get("partial_offer_allowed", False)),
         )
 
         sdl_out = optimize_sdl_only(
@@ -918,12 +946,45 @@ if market_mode in ("DA_PLUS_ID", "DA_ID_SDL_MULTIUSE"):
                 perfect_forecast_upper_bound_mode=True,
                 block_hours=4,
                 tz_local="Europe/Zurich",
+
+                # technische Realisierungslogik
+                enforce_realized_soc=bool(mu_cfg.get("enforce_realized_soc", True)),
+                reserve_duration_minutes=float(
+                    mu_cfg.get(
+                        "reserve_duration_minutes",
+                        sdl_cfg.get("reserve_duration_minutes", 5.0),
+                    ) or 5.0
+                ),
+                soc_buffer_kwh=float(
+                    mu_cfg.get(
+                        "soc_buffer_kwh",
+                        sdl_cfg.get("soc_buffer_kwh", 0.0),
+                    ) or 0.0
+                ),
+                allow_partial_sdl_offer=bool(
+                    mu_cfg.get(
+                        "allow_partial_sdl_offer",
+                        sdl_cfg.get("partial_offer_allowed", False),
+                    )
+                ),
+                fallback_eta_ch=float(batt.get("eta_ch", 0.95)),
+                fallback_eta_dis=float(batt.get("eta_dis", 0.95)),
             )
 
             multiuse_df, multiuse_kpis = build_multiuse_priority_sdl(
                 results_da_id=daid_ts,
                 sdl_timeseries=sdl_ts,
                 settings=mu_settings,
+                batt={
+                    "e_nom_kwh": float(batt.get("e_nom_kwh", 1000.0)),
+                    "p_ch_max_kw": float(batt.get("p_ch_max_kw", 500.0)),
+                    "p_dis_max_kw": float(batt.get("p_dis_max_kw", 500.0)),
+                    "eta_ch": float(batt.get("eta_ch", 0.95)),
+                    "eta_dis": float(batt.get("eta_dis", 0.95)),
+                    "soc0": float(batt.get("soc0", 0.5)),
+                    "soc_min": float(batt.get("soc_min", 0.05)),
+                    "soc_max": float(batt.get("soc_max", 0.95)),
+                },
             )
 
             save_parquet(sname, "multiuse_timeseries", multiuse_df)
